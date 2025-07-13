@@ -14,38 +14,71 @@
  * Иногда промисы от API будут приходить в состояние rejected, (прямо как и API в реальной жизни)
  * Ответ будет приходить в поле {result}
  */
- import Api from '../tools/api';
+import Api from '../tools/api';
 
- const api = new Api();
+const apiClient = new Api();
 
- /**
-  * Я – пример, удали меня
-  */
- const wait = time => new Promise(resolve => {
-     setTimeout(resolve, time);
- })
+const every =
+    (...preds) =>
+        (...args) =>
+            preds.every((p) => p(...args));
 
- const processSequence = ({value, writeLog, handleSuccess, handleError}) => {
-     /**
-      * Я – пример, удали меня
-      */
-     writeLog(value);
+const flow =
+    (...fns) =>
+        (x) =>
+            fns.reduce((v, f) => f(v), x);
 
-     api.get('https://api.tech/numbers/base', {from: 2, to: 10, number: '01011010101'}).then(({result}) => {
-         writeLog(result);
-     });
+const flowAsync =
+    (...fns) =>
+        async (x) => {
+            let res = x;
+            for (const f of fns) res = await f(res);
+            return res;
+        };
 
-     wait(2500).then(() => {
-         writeLog('SecondLog')
+const trace =
+    (fx) =>
+        (x) => (fx(x), x);
 
-         return wait(1500);
-     }).then(() => {
-         writeLog('ThirdLog');
+const convertNumber =
+    (from, to) =>
+        (num) =>
+            apiClient
+                .get('https://api.tech/numbers/base', { from, to, number: num })
+                .then(({ result }) => result);
 
-         return wait(400);
-     }).then(() => {
-         handleSuccess('Done');
-     });
- }
+const fetchAnimal =
+    (id) =>
+        apiClient
+            .get(`https://animals.tech/${id}`, {})
+            .then(({ result }) => result);
 
-export default processSequence;
+
+const isValidInput = every(
+    (s) => s.length > 2 && s.length < 10,
+    (s) => /^[0-9.]+$/.test(s),
+    (s) => !Number.isNaN(parseFloat(s)),
+    (s) => parseFloat(s) > 0
+);
+
+const toRoundedInt = flow(parseFloat, Math.round);
+
+
+export default async function processSequence({value, writeLog, handleSuccess, handleError,}) {
+    const log = trace(writeLog);
+
+    log(value);
+
+    if (!isValidInput(value)) {
+        handleError('ValidationError');
+        return;
+    }
+
+    const rounded     = log(toRoundedInt(value));
+    const binary      = await flowAsync(convertNumber(10, 2), log)(rounded);
+    const length      = log(binary.length);
+    const squared     = log(length ** 2);
+    const remainder   = log(squared % 3);
+
+    await flowAsync(fetchAnimal, handleSuccess)(remainder);
+}
