@@ -21,9 +21,6 @@ const getColorCount = (color) => pipe(values, filter(equals(color)), length);
 const shapeIs = (shape) => (color) => pipe(prop(shape), equals(color));
 const allColorsAre = (color) => pipe(values, all(equals(color)));
 
-
-
-
 // 1. Красная звезда, зеленый квадрат, все остальные белые.
 export const validateFieldN1 = allPass([
     shapeIs('star')('red'),
@@ -31,6 +28,7 @@ export const validateFieldN1 = allPass([
     shapeIs('triangle')('white'),
     shapeIs('circle')('white'),
 ]);
+
 // 2. Как минимум две фигуры зеленые.
 export const validateFieldN2 = pipe(getColorCount('green'), (count) => count >= 2);
 
@@ -66,7 +64,6 @@ export const validateFieldN8 = pipe(
     prop('star'),
     (color) => !['red', 'white'].includes(color)
 );
-
 
 // 9. Все фигуры зеленые.
 export const validateFieldN9 = allColorsAre('green');

@@ -63,7 +63,6 @@ const isValidInput = every(
 
 const toRoundedInt = flow(parseFloat, Math.round);
 
-
 export default async function processSequence({value, writeLog, handleSuccess, handleError,}) {
     const log = trace(writeLog);
 
